@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LuanOS 4.3 | Definitive Edition</title>
+    
+    <!-- Bibliotecas -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #020617;
+            color: #f8fafc;
+            overflow: hidden;
+        }
+
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+        }
+        
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 5px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+        
+        /* Animações */
+        .card-hover { transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1); }
+        .card-hover:hover { transform: translateY(-4px); border-color: rgba(255,255,255,0.2); }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        /* Custom Checkbox Logic */
+        .custom-checkbox input:checked + div { background-color: #22c55e; border-color: #22c55e; }
+        .custom-checkbox input:checked + div svg { display: block; }
+
+        /* Chat Styles */
+        .chat-bubble-ai { background: rgba(30, 41, 59, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); color: #e2e8f0; border-radius: 12px 12px 12px 0; max-width: 85%; }
+        .chat-bubble-user { background: #3b82f6; color: white; border-radius: 12px 12px 0 12px; max-width: 85%; }
+        
+        /* Themes */
+        .theme-coach .chat-bubble-ai { border-color: rgba(16, 185, 129, 0.3); background: rgba(6, 78, 59, 0.4); }
+        .theme-tutor .chat-bubble-ai { border-color: rgba(139, 92, 246, 0.3); background: rgba(76, 29, 149, 0.4); }
+
+        /* Timeline */
+        .timeline-line { position: absolute; left: 28px; top: 20px; bottom: 20px; width: 2px; background: linear-gradient(to bottom, #22c55e 0%, #334155 100%); z-index: 0; }
+        
+        /* Audio Wave */
+        .listening-wave { display: inline-flex; align-items: center; gap: 2px; height: 16px; }
+        .listening-wave span { width: 3px; height: 100%; background: #ef4444; border-radius: 2px; animation: wave 1s infinite ease-in-out; }
+        .listening-wave span:nth-child(2) { animation-delay: 0.1s; }
+        .listening-wave span:nth-child(3) { animation-delay: 0.2s; }
+        @keyframes wave { 0%, 100% { height: 4px; } 50% { height: 16px; } }
+    </style>
+</head>
+<body class="flex h-screen selection:bg-blue-500 selection:text-white">
+
+    <!-- SIDEBAR -->
+    <aside class="w-20 lg:w-72 glass-panel border-r-0 flex flex-col justify-between z-50">
+        <div class="h-24 flex items-center justify-center lg:justify-start lg:px-8 border-b border-white/5">
+            <div class="relative group cursor-pointer">
+                <!-- FOTO -->
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-blue-500/20 overflow-hidden border-2 border-white/10">
+                    <img src="perfil.png" onerror="this.style.display='none'" class="w-full h-full object-cover">
+                    <span class="absolute">L</span>
+                </div>
+                <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-slate-900"></div>
+            </div>
+            <div class="ml-4 hidden lg:block">
+                <h1 class="font-bold text-lg tracking-wide text-white">Luan Vita</h1>
+                <p class="text-xs text-slate-400">Head of Growth</p>
+            </div>
+        </div>
+
+        <nav class="flex-1 px-4 py-8 space-y-2">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center p-3.5 rounded-xl bg-white/10 text-white transition-all group active-nav">
+                <i class="fa-solid fa-grid-2 text-xl w-8 text-center text-blue-400"></i>
+                <span class="ml-3 font-medium hidden lg:block">Visão Geral</span>
+            </button>
+            <p class="hidden lg:block px-4 mt-6 mb-2 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Áreas de Foco</p>
+            <button onclick="switchTab('v4')" id="nav-v4" class="nav-btn w-full flex items-center p-3.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all group"><i class="fa-solid fa-building text-xl w-8 text-center group-hover:text-red-400"></i><span class="ml-3 font-medium hidden lg:block">Carreira V4</span></button>
+            <button onclick="switchTab('freela')" id="nav-freela" class="nav-btn w-full flex items-center p-3.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all group"><i class="fa-solid fa-briefcase text-xl w-8 text-center group-hover:text-yellow-400"></i><span class="ml-3 font-medium hidden lg:block">Agência Freela</span></button>
+            <button onclick="switchTab('english')" id="nav-english" class="nav-btn w-full flex items-center p-3.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all group"><i class="fa-solid fa-earth-americas text-xl w-8 text-center group-hover:text-purple-400"></i><span class="ml-3 font-medium hidden lg:block">Jornada Inglês</span></button>
+            <button onclick="switchTab('routine')" id="nav-routine" class="nav-btn w-full flex items-center p-3.5 rounded-xl text-slate-400 hover:bg-white/5 hover:text-white transition-all group"><i class="fa-regular fa-calendar-check text-xl w-8 text-center group-hover:text-green-400"></i><span class="ml-3 font-medium hidden lg:block">Rotina</span></button>
+        </nav>
+
+        <div class="p-6 border-t border-white/5 hidden lg:block">
+            <div class="bg-white/5 rounded-xl p-4 border border-white/5">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs text-slate-400 font-semibold">META (9K)</span>
+                    <span class="text-xs text-white font-bold" id="global-progress-text">41%</span>
+                </div>
+                <div class="w-full bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div id="global-progress-bar" class="bg-gradient-to-r from-blue-500 to-indigo-500 h-full w-[41%] shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-1000"></div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 relative overflow-y-auto bg-[url('https://grainy-gradients.vercel.app/noise.svg')] bg-opacity-20">
+        
+        <header class="h-24 flex items-center justify-between px-8 sticky top-0 z-40 backdrop-blur-sm bg-slate-950/50">
+            <div>
+                <h2 id="page-title" class="text-2xl font-bold text-white">Dashboard</h2>
+                <p class="text-sm text-slate-400 flex items-center gap-2"><span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span> Planejamento 2026 Ativo</p>
+            </div>
+            <div class="text-right hidden md:block opacity-70 hover:opacity-100 transition cursor-help" title="Dados salvos automaticamente">
+                <p class="text-[10px] text-green-400 font-bold uppercase tracking-wider"><i class="fa-solid fa-database mr-1"></i> Auto-Save On</p>
+            </div>
+        </header>
+
+        <div class="p-8 max-w-[1600px] mx-auto pb-32">
+
+            <!-- ================= VIEW: DASHBOARD ================= -->
+            <div id="view-dashboard" class="view-section fade-in">
+                
+                <!-- 1. BARRA DE STATUS FINANCEIRO -->
+                <div class="glass-panel p-4 rounded-2xl mb-6 flex items-center justify-between border-l-4 border-blue-500">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400"><i class="fa-solid fa-wallet"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-bold">Renda Mensal Total</p>
+                            <div class="flex items-baseline gap-2">
+                                <h3 class="text-2xl font-bold text-white" id="main-total-income">R$ 3.700,00</h3>
+                                <span class="text-xs text-slate-500">de R$ 9.000,00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 mx-8 hidden md:block">
+                        <div class="flex justify-between text-xs text-slate-400 mb-1">
+                            <span>Progresso da Meta</span>
+                            <span id="main-progress-pct">41%</span>
+                        </div>
+                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                            <div id="main-progress-bar" class="bg-gradient-to-r from-blue-500 to-green-400 h-full w-[41%] shadow-[0_0_10px_rgba(59,130,246,0.5)] transition-all duration-1000"></div>
+                        </div>
+                    </div>
+                    <div class="text-right hidden md:block">
+                        <span class="text-xs bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/20">Em Crescimento</span>
+                    </div>
+                </div>
+
+                <!-- 2. CARDS PRINCIPAIS -->
+                <div class="grid grid-cols-1 md:grid-cols-4 lg:grid-cols-4 gap-6 mb-6">
+                    <!-- V4 Status -->
+                    <div class="glass-panel p-6 rounded-3xl col-span-1 md:col-span-2 relative overflow-hidden group card-hover">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-[50px] transition group-hover:bg-red-500/20"></div>
+                        <div class="flex justify-between items-start mb-4">
+                            <div>
+                                <span class="text-xs font-bold text-red-400 uppercase tracking-widest bg-red-500/10 px-2 py-1 rounded border border-red-500/20">Principal</span>
+                                <h3 class="text-3xl font-bold text-white mt-2">V4 Company</h3>
+                            </div>
+                            <div class="text-right">
+                                <p class="text-xs text-slate-400 uppercase">Progresso da Meta</p>
+                                <div class="flex items-baseline gap-1 justify-end">
+                                    <p class="text-xl font-bold text-white" id="dash-v4-current-mini">R$ 3.700</p>
+                                    <span class="text-xs text-slate-500 font-medium">/ R$ 6.000</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="relative pt-2">
+                            <div class="flex justify-between text-xs text-slate-400 mb-2 font-mono">
+                                <span>Salário Atual</span>
+                                <span id="dash-v4-pct">61%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-3 rounded-full overflow-hidden">
+                                <div id="dash-v4-bar" class="bg-gradient-to-r from-red-600 to-orange-600 h-full w-[61%] transition-all duration-1000"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Income Distribution -->
+                    <div class="glass-panel p-6 rounded-3xl col-span-1 relative card-hover flex flex-col justify-between">
+                        <div class="flex justify-between items-start mb-2">
+                            <p class="text-slate-400 text-xs uppercase font-bold">Mix de Renda</p>
+                            <i class="fa-solid fa-chart-pie text-slate-600"></i>
+                        </div>
+                        <div class="h-32 relative">
+                            <canvas id="incomeDistChart"></canvas>
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <span class="text-xs text-slate-500 font-bold">Mix</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- MINDSET CARD (ARISTOTELES) -->
+                    <div class="glass-panel p-6 rounded-3xl col-span-1 relative card-hover flex flex-col justify-center items-center text-center bg-gradient-to-br from-indigo-900/40 to-slate-900/40 border border-indigo-500/20">
+                        <i class="fa-solid fa-quote-left text-3xl text-yellow-500 mb-3"></i>
+                        <p class="text-sm font-medium text-white leading-relaxed italic">"Somos o que fazemos repetidamente. A excelência, portanto, não é um ato, mas um hábito."</p>
+                        <p class="text-[10px] text-slate-400 mt-2 uppercase tracking-widest font-bold">Aristóteles</p>
+                    </div>
+                </div>
+
+                <!-- 3. NOVAS MÉTRICAS -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <!-- Investimentos -->
+                    <div class="glass-panel p-5 rounded-2xl flex flex-col justify-between card-hover border-b-4 border-emerald-500 relative">
+                        <div class="flex justify-between items-start">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-400 text-lg"><i class="fa-solid fa-sack-dollar"></i></div>
+                                <div>
+                                    <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Patrimônio Investido</p>
+                                    <h3 class="text-2xl font-black text-white" id="inv-current">R$ 8.500</h3>
+                                </div>
+                            </div>
+                            <button onclick="addInvestment()" class="text-xs bg-emerald-600 hover:bg-emerald-500 text-white w-8 h-8 rounded-full flex items-center justify-center transition shadow-lg"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                        <div class="mt-4">
+                            <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                                <span>Progresso</span>
+                                <span id="inv-pct">38%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                                <div id="inv-bar" class="bg-emerald-500 h-full w-[38%]"></div>
+                            </div>
+                            <p class="text-[10px] text-right text-emerald-400/60 mt-1">Meta: R$ 22.000</p>
+                        </div>
+                    </div>
+
+                    <!-- Countdown -->
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4 card-hover border-b-4 border-orange-500">
+                        <div class="w-12 h-12 rounded-xl bg-orange-500/10 flex items-center justify-center text-orange-400 text-xl"><i class="fa-solid fa-hourglass-half"></i></div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Próximo Salto (Fev/26)</p>
+                            <h3 class="text-2xl font-black text-white flex items-baseline gap-1">34 <span class="text-sm font-normal text-slate-500">dias</span></h3>
+                        </div>
+                    </div>
+
+                    <!-- Nível Inglês -->
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4 card-hover border-b-4 border-purple-500 relative overflow-hidden">
+                        <div class="absolute right-0 top-0 p-4 opacity-10"><i class="fa-solid fa-earth-americas text-6xl text-purple-500"></i></div>
+                        <div class="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400 text-xl"><i class="fa-solid fa-language"></i></div>
+                        <div>
+                            <p class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Nível de Inglês</p>
+                            <h3 class="text-3xl font-black text-white" id="dash-english-lvl">A1</h3>
+                            <p class="text-[10px] text-slate-500">Automático via Jornada</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Mid Row: Certifications & Health -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <!-- Certifications Tracker -->
+                    <div class="glass-panel p-6 rounded-3xl col-span-2">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="font-bold text-white"><i class="fa-solid fa-award text-yellow-500 mr-2"></i>Certificações Técnicas</h3>
+                            <span class="text-xs text-slate-400">Currículo de Elite</span>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3 max-h-48 overflow-y-auto pr-1">
+                            <label class="custom-checkbox flex items-center p-2.5 bg-slate-800/50 rounded-xl cursor-pointer hover:bg-slate-800 border border-slate-700/50 transition">
+                                <input type="checkbox" class="sr-only save-checkbox" id="cert-search">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 bg-slate-900"><svg class="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                                <span class="text-xs text-slate-300">Google Ads Search</span>
+                            </label>
+                            <label class="custom-checkbox flex items-center p-2.5 bg-slate-800/50 rounded-xl cursor-pointer hover:bg-slate-800 border border-slate-700/50 transition">
+                                <input type="checkbox" class="sr-only save-checkbox" id="cert-creative">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 bg-slate-900"><svg class="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                                <span class="text-xs text-slate-300">Google Ads Criativos</span>
+                            </label>
+                            <label class="custom-checkbox flex items-center p-2.5 bg-slate-800/50 rounded-xl cursor-pointer hover:bg-slate-800 border border-slate-700/50 transition">
+                                <input type="checkbox" class="sr-only save-checkbox" id="cert-shopping">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 bg-slate-900"><svg class="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                                <span class="text-xs text-slate-300">Google Ads Shopping</span>
+                            </label>
+                            <label class="custom-checkbox flex items-center p-2.5 bg-slate-800/50 rounded-xl cursor-pointer hover:bg-slate-800 border border-slate-700/50 transition">
+                                <input type="checkbox" class="sr-only save-checkbox" id="cert-linkedin">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 bg-slate-900"><svg class="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                                <span class="text-xs text-slate-300">Intro LinkedIn Ads</span>
+                            </label>
+                            <label class="custom-checkbox flex items-center p-2.5 bg-slate-800/50 rounded-xl cursor-pointer hover:bg-slate-800 border border-slate-700/50 transition">
+                                <input type="checkbox" class="sr-only save-checkbox" id="cert-video">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 bg-slate-900"><svg class="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                                <span class="text-xs text-slate-300">Google Ads Vídeo</span>
+                            </label>
+                            <label class="custom-checkbox flex items-center p-2.5 bg-slate-800/50 rounded-xl cursor-pointer hover:bg-slate-800 border border-slate-700/50 transition">
+                                <input type="checkbox" class="sr-only save-checkbox" id="cert-metrics">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 bg-slate-900"><svg class="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                                <span class="text-xs text-slate-300">Google Ads Métricas</span>
+                            </label>
+                            <label class="custom-checkbox flex items-center p-2.5 bg-slate-800/50 rounded-xl cursor-pointer hover:bg-slate-800 border border-slate-700/50 transition">
+                                <input type="checkbox" class="sr-only save-checkbox" id="cert-make">
+                                <div class="w-4 h-4 border-2 border-slate-500 rounded flex items-center justify-center mr-3 transition-colors flex-shrink-0 bg-slate-900"><svg class="w-3 h-3 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div>
+                                <span class="text-xs text-slate-300">Make Foundation</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Health Tracker -->
+                    <div class="glass-panel p-6 rounded-3xl col-span-2 relative overflow-hidden bg-gradient-to-br from-green-900/10 to-slate-900">
+                        <div class="flex justify-between items-start mb-4">
+                            <h3 class="font-bold text-white"><i class="fa-solid fa-weight-scale text-green-500 mr-2"></i>Monitor Corporal</h3>
+                            <span class="text-xs bg-green-500/10 text-green-400 px-2 py-1 rounded border border-green-500/20">Meta: 70kg</span>
+                        </div>
+                        <div class="flex items-center gap-6">
+                            <div class="flex-1">
+                                <p class="text-xs text-slate-400 mb-1">Peso Atual</p>
+                                <div class="flex items-center gap-2">
+                                    <button onclick="adjustWeight(-0.5)" class="w-8 h-8 rounded bg-slate-800 hover:bg-slate-700 text-white">-</button>
+                                    <span id="current-weight" class="text-3xl font-bold text-white w-20 text-center">90.0</span>
+                                    <span class="text-sm text-slate-500">kg</span>
+                                    <button onclick="adjustWeight(0.5)" class="w-8 h-8 rounded bg-slate-800 hover:bg-slate-700 text-white">+</button>
+                                </div>
+                            </div>
+                            <div class="flex-1 text-right">
+                                <p class="text-xs text-slate-400 mb-1">Progresso</p>
+                                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden mt-2">
+                                    <div id="weight-bar" class="bg-green-500 h-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                                <p class="text-xs text-green-400 mt-1" id="weight-lost">0kg eliminados</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bottom Row: Chart -->
+                <div class="glass-panel p-6 rounded-3xl border-t-4 border-blue-500">
+                    <h3 class="font-bold text-white text-lg mb-6">Evolução Financeira</h3>
+                    <div class="h-64 w-full"><canvas id="financeChart"></canvas></div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW: V4 ================= -->
+            <div id="view-v4" class="view-section hidden fade-in">
+                <div class="flex justify-between items-end mb-8">
+                    <h2 class="text-3xl font-bold text-white">Escalada Corporativa</h2>
+                    <div class="text-right">
+                        <p class="text-xs text-slate-400">Salário Atual</p>
+                        <p class="text-2xl font-bold text-green-400" id="v4-salary-display">R$ 3.700</p>
+                    </div>
+                </div>
+                
+                <!-- NEW ELEMENT: REVIEW CYCLE -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4 bg-slate-800/50">
+                        <div class="w-12 h-12 rounded-xl bg-blue-600/20 flex items-center justify-center text-blue-400"><i class="fa-solid fa-calendar-check"></i></div>
+                        <div>
+                            <p class="text-xs text-slate-400 uppercase font-bold">Ciclo de Avaliação</p>
+                            <p class="text-white font-bold">Trimestral (Q1)</p>
+                            <p class="text-xs text-slate-500">Próx: Março/26</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="relative max-w-4xl mx-auto pb-12">
+                    <div class="timeline-line"></div>
+                    <!-- Jan -->
+                    <div class="relative pl-24 pb-12 group">
+                        <div class="absolute left-6 top-2 w-4 h-4 bg-green-500 rounded-full border-4 border-slate-950 shadow-[0_0_10px_rgba(34,197,94,0.5)] z-10"></div>
+                        <div class="glass-panel p-6 rounded-2xl border border-green-500/20 relative">
+                            <div class="flex justify-between items-start">
+                                <div><span class="text-green-400 font-bold text-xs uppercase tracking-wider mb-1 block">Fase Atual (Jan)</span><h3 class="text-xl font-bold text-white">Analista Operacional</h3><p class="text-slate-400 text-sm mt-1">Foco: Entregas sem erro e organização.</p></div>
+                                <div class="text-right"><p class="text-2xl font-bold text-white">R$ 3.700</p><button class="mt-2 text-xs bg-green-500/10 text-green-400 px-3 py-1 rounded border border-green-500/20 cursor-default">Ativo</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Fev -->
+                    <div class="relative pl-24 pb-12 group">
+                        <div class="absolute left-6 top-2 w-4 h-4 bg-slate-700 rounded-full border-4 border-slate-950 z-10"></div>
+                        <div class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-white/20 transition duration-300">
+                            <div class="flex justify-between items-start">
+                                <div><span class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1 block">Próximo Marco (Fev)</span><h3 class="text-xl font-bold text-white">Performance Boost</h3><ul class="text-slate-400 text-sm mt-2 list-disc pl-4"><li>NPS dos clientes > 75</li><li>Zero erros de setup</li></ul><p class="text-xs text-blue-400 mt-3 font-bold uppercase"><i class="fa-solid fa-star mr-1"></i> NPS Pessoal: <span class="text-white">Em análise</span></p></div>
+                                <div class="text-right flex flex-col items-end"><p class="text-2xl font-bold text-slate-300">R$ 4.200</p><p class="text-xs text-green-400 font-bold mt-1 mb-2">+ R$ 500,00</p><button onclick="updateV4Salary(4200, this)" class="bg-slate-700 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded transition">Confirmar Conquista</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Maio -->
+                    <div class="relative pl-24 pb-12 group">
+                        <div class="absolute left-6 top-2 w-4 h-4 bg-slate-700 rounded-full border-4 border-slate-950 z-10"></div>
+                        <div class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-white/20 transition duration-300">
+                             <div class="flex justify-between items-start">
+                                <div><span class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1 block">Marco Técnico (Maio)</span><h3 class="text-xl font-bold text-white">Especialista Certificado</h3><ul class="text-slate-400 text-sm mt-2 list-disc pl-4"><li>Skillshop Google Ads</li><li>GA4 Expert</li></ul></div>
+                                <div class="text-right flex flex-col items-end"><p class="text-2xl font-bold text-slate-300">R$ 4.700</p><p class="text-xs text-green-400 font-bold mt-1 mb-2">+ R$ 500,00</p><button onclick="updateV4Salary(4700, this)" class="bg-slate-700 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded transition">Confirmar Conquista</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Setembro -->
+                    <div class="relative pl-24 pb-12 group">
+                        <div class="absolute left-6 top-2 w-4 h-4 bg-slate-700 rounded-full border-4 border-slate-950 z-10"></div>
+                        <div class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-white/20 transition duration-300">
+                             <div class="flex justify-between items-start">
+                                <div><span class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1 block">Marco de Liderança (Set)</span><h3 class="text-xl font-bold text-white">Gestor Key Account</h3><ul class="text-slate-400 text-sm mt-2 list-disc pl-4"><li>Assumir contas de alto valor</li><li>Mentoria de juniores</li></ul></div>
+                                <div class="text-right flex flex-col items-end"><p class="text-2xl font-bold text-slate-300">R$ 5.350</p><p class="text-xs text-green-400 font-bold mt-1 mb-2">+ R$ 650,00</p><button onclick="updateV4Salary(5350, this)" class="bg-slate-700 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded transition">Confirmar Conquista</button></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Dezembro -->
+                    <div class="relative pl-24 group">
+                        <div class="absolute left-6 top-2 w-4 h-4 bg-slate-700 rounded-full border-4 border-slate-950 z-10"></div>
+                        <div class="glass-panel p-6 rounded-2xl border border-white/5 hover:border-red-500/30 transition duration-300 relative overflow-hidden">
+                            <div class="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-[40px] pointer-events-none"></div> 
+                            <div class="flex justify-between items-start relative z-10">
+                                <div><span class="text-slate-500 font-bold text-xs uppercase tracking-wider mb-1 block">Meta Anual (Dez)</span><h3 class="text-xl font-bold text-white">Liderança Consolidada</h3><ul class="text-slate-400 text-sm mt-2 list-disc pl-4"><li>Fechamento de Ciclo 2026</li><li>Preparação Internacional</li></ul></div>
+                                <div class="text-right flex flex-col items-end"><p class="text-3xl font-bold text-red-500">R$ 6.000</p><p class="text-xs text-green-400 font-bold mt-1 mb-2">+ R$ 650,00</p><button onclick="updateV4Salary(6000, this)" class="bg-slate-700 hover:bg-green-600 text-white text-xs px-3 py-1.5 rounded transition">Confirmar Conquista</button></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW: FREELA (CRM) ================= -->
+            <div id="view-freela" class="view-section hidden fade-in">
+                <div class="flex justify-between items-end mb-8">
+                    <div><h2 class="text-3xl font-bold text-white">Agência Freelance</h2><p class="text-slate-400 mt-1">Gestão de Clientes & Contratos</p></div>
+                    <button onclick="openClientModal()" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold px-6 py-3 rounded-xl shadow-lg shadow-yellow-500/20 transition flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Contrato</button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4 border border-yellow-500/10">
+                        <div class="w-12 h-12 rounded-full bg-yellow-500/10 flex items-center justify-center text-yellow-500 text-xl"><i class="fa-solid fa-money-bill-wave"></i></div>
+                        <div><p class="text-xs text-slate-400 uppercase font-bold">MRR Atual (Mensal)</p><p class="text-2xl font-bold text-white" id="crm-mrr">R$ 0,00</p></div>
+                    </div>
+                    <!-- NEW: LIFETIME REVENUE -->
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4 border border-green-500/10">
+                        <div class="w-12 h-12 rounded-full bg-green-500/10 flex items-center justify-center text-green-500 text-xl"><i class="fa-solid fa-sack-dollar"></i></div>
+                        <div><p class="text-xs text-slate-400 uppercase font-bold">Faturamento Total (LTV)</p><p class="text-2xl font-bold text-white" id="crm-ltv">R$ 0,00</p></div>
+                    </div>
+                    <div class="glass-panel p-5 rounded-2xl flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center text-blue-500 text-xl"><i class="fa-solid fa-users"></i></div>
+                        <div><p class="text-xs text-slate-400 uppercase font-bold">Vagas Ocupadas</p><p class="text-2xl font-bold text-white"><span id="crm-count">0</span> / 3</p></div>
+                    </div>
+                </div>
+
+                <div id="clients-container" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6"></div>
+            </div>
+
+            <!-- ================= VIEW: ENGLISH (REDESIGNED) ================= -->
+            <div id="view-english" class="view-section hidden fade-in">
+                
+                <!-- HEADER VISUAL -->
+                <div class="bg-gradient-to-r from-purple-900/40 to-indigo-900/40 rounded-3xl p-8 mb-8 border border-white/5 flex flex-col md:flex-row items-center justify-between">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2">Fluency Journey</h2>
+                        <p class="text-purple-300">Domine o idioma global para desbloquear carreiras internacionais.</p>
+                    </div>
+                    <div class="mt-4 md:mt-0 flex gap-4">
+                        <div class="text-center px-4 py-2 bg-slate-900/50 rounded-xl">
+                            <p class="text-xs text-slate-400 uppercase font-bold">Nível Atual</p>
+                            <p class="text-2xl font-bold text-white" id="page-english-lvl">A1</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 h-auto">
+                    <!-- Left: Card Grid Levels -->
+                    <div class="lg:col-span-6 grid grid-cols-2 gap-4 h-full content-start">
+                        <!-- A1 -->
+                        <div class="glass-panel p-5 rounded-2xl border border-purple-500/30 bg-purple-900/20 relative group">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-purple-500 text-white text-xs font-bold px-2 py-1 rounded">START</span>
+                                <label class="custom-checkbox cursor-pointer"><input type="checkbox" class="level-check save-checkbox sr-only" onchange="updateEnglishLevel('A1')" id="lvl-a1"><div class="w-6 h-6 border-2 border-slate-400 rounded flex items-center justify-center transition-colors"><svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></label>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">A1: Básico</h3>
+                            <p class="text-xs text-slate-300 mt-2">Fundação: Vocabulário essencial, presente simples e frases de sobrevivência.</p>
+                        </div>
+                        <!-- A2 -->
+                        <div class="glass-panel p-5 rounded-2xl border border-slate-700 hover:border-purple-500/50 transition relative group">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-slate-700 text-slate-300 text-xs font-bold px-2 py-1 rounded">NEXT</span>
+                                <label class="custom-checkbox cursor-pointer"><input type="checkbox" class="level-check save-checkbox sr-only" onchange="updateEnglishLevel('A2')" id="lvl-a2"><div class="w-6 h-6 border-2 border-slate-400 rounded flex items-center justify-center transition-colors"><svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></label>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">A2: Elementar</h3>
+                            <p class="text-xs text-slate-400 mt-2">Passado simples, rotinas diárias e compreensão de textos curtos.</p>
+                        </div>
+                        <!-- B1 -->
+                        <div class="glass-panel p-5 rounded-2xl border border-slate-700 hover:border-purple-500/50 transition relative group">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-slate-700 text-slate-300 text-xs font-bold px-2 py-1 rounded">LOCKED</span>
+                                <label class="custom-checkbox cursor-pointer"><input type="checkbox" class="level-check save-checkbox sr-only" onchange="updateEnglishLevel('B1')" id="lvl-b1"><div class="w-6 h-6 border-2 border-slate-400 rounded flex items-center justify-center transition-colors"><svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></label>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">B1: Independente</h3>
+                            <p class="text-xs text-slate-400 mt-2">Consumo de conteúdo técnico, reuniões simples e e-mails.</p>
+                        </div>
+                        <!-- B2 -->
+                        <div class="glass-panel p-5 rounded-2xl border border-slate-700 hover:border-purple-500/50 transition relative group">
+                            <div class="flex justify-between items-start mb-2">
+                                <span class="bg-slate-700 text-slate-300 text-xs font-bold px-2 py-1 rounded">GOAL</span>
+                                <label class="custom-checkbox cursor-pointer"><input type="checkbox" class="level-check save-checkbox sr-only" onchange="updateEnglishLevel('B2')" id="lvl-b2"><div class="w-6 h-6 border-2 border-slate-400 rounded flex items-center justify-center transition-colors"><svg class="w-4 h-4 text-white hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg></div></label>
+                            </div>
+                            <h3 class="text-xl font-bold text-white">B2: Fluente</h3>
+                            <p class="text-xs text-slate-400 mt-2">Conversação fluida, entrevistas internacionais e negociação.</p>
+                        </div>
+                    </div>
+
+                    <!-- Right: AI Audio Chat -->
+                    <div class="lg:col-span-6 flex flex-col gap-4">
+                        <div class="glass-panel p-6 rounded-2xl flex-1 flex flex-col bg-slate-950/50 h-[500px] relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-purple-500 to-pink-500"></div>
+                            <div class="flex items-center justify-between mb-4 pb-4 border-b border-white/5">
+                                <div class="flex items-center gap-3">
+                                    <img src="https://ui-avatars.com/api/?name=Teacher+AI&background=7c3aed&color=fff" class="w-12 h-12 rounded-full border-2 border-purple-500">
+                                    <div><h3 class="font-bold text-white">Prof. Gemini (Audio)</h3><p class="text-xs text-purple-400">Conversation Mode: ON</p></div>
+                                </div>
+                                <div id="listening-indicator" class="hidden"><div class="listening-wave"><span></span><span></span><span></span></div><span class="text-xs text-red-400 ml-2 font-bold">Ouvindo...</span></div>
+                            </div>
+                            <div id="teacher-messages" class="flex-1 overflow-y-auto space-y-4 pr-2 pb-4">
+                                <div class="flex gap-3">
+                                    <img src="https://ui-avatars.com/api/?name=Teacher+AI&background=7c3aed&color=fff" class="w-8 h-8 rounded-full self-end mb-1">
+                                    <div class="teacher-bubble-ai p-3 text-sm">Hello Luan! I am your AI Tutor. Press the microphone to speak with me.</div>
+                                </div>
+                            </div>
+                            <div class="mt-4 flex gap-2 relative items-center">
+                                <button onclick="toggleMic()" id="mic-btn" class="w-12 h-12 rounded-full bg-slate-800 hover:bg-red-500 text-white transition flex items-center justify-center border border-slate-700 hover:border-red-400 shadow-lg group"><i class="fa-solid fa-microphone text-xl group-hover:animate-pulse"></i></button>
+                                <input type="text" id="teacher-input" class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:border-purple-500 outline-none shadow-inner" placeholder="Type or speak..." onkeypress="handleTeacherEnter(event)">
+                                <button onclick="sendToTeacher()" class="bg-purple-600 hover:bg-purple-500 text-white p-3 rounded-xl transition shadow-lg shadow-purple-500/20"><i class="fa-solid fa-paper-plane"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ================= VIEW: ROUTINE ================= -->
+            <div id="view-routine" class="view-section hidden fade-in">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
+                    <div><h2 class="text-3xl font-bold text-white">Cronograma Semanal</h2><p class="text-slate-400 text-sm">Visualização de Alta Performance</p></div>
+                    
+                    <!-- AGENDA INTEGRATION -->
+                    <div class="flex gap-2 items-center bg-slate-800 p-2 rounded-xl border border-slate-700">
+                        <input type="text" id="calendar-link-input" placeholder="URL de Incorporação (Embed)..." class="bg-slate-900 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white outline-none w-64 focus:border-blue-500">
+                        <button onclick="saveCalendarLink()" class="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-xs font-bold transition">Salvar & Ver</button>
+                    </div>
+                </div>
+
+                <!-- NEW: AGENDA CONTAINER -->
+                <div id="calendar-container" class="hidden w-full h-[600px] mb-8 glass-panel rounded-2xl overflow-hidden border border-white/10">
+                    <iframe id="calendar-frame" src="" style="border: 0" width="100%" height="100%" frameborder="0" scrolling="no"></iframe>
+                </div>
+
+                <!-- EXISTING ROUTINE GRID (FALLBACK/SUPPLEMENT) -->
+                <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                    <div class="lg:col-span-3">
+                        <div class="schedule-grid">
+                            <div class="schedule-header">Hora</div><div class="schedule-header">Seg</div><div class="schedule-header">Ter</div><div class="schedule-header">Qua</div><div class="schedule-header">Qui</div><div class="schedule-header">Sex</div>
+                            <div class="schedule-time">06:00</div><div class="schedule-cell"><div class="event-block evt-darkpurple">📚 Inglês / Estudo<span class="font-normal opacity-70 text-[9px]">Foco Total</span></div></div><div class="schedule-cell"><div class="event-block evt-darkpurple">📚 Inglês / Estudo</div></div><div class="schedule-cell"><div class="event-block evt-darkpurple">📚 Inglês / Estudo</div></div><div class="schedule-cell"><div class="event-block evt-darkpurple">📚 Inglês / Estudo</div></div><div class="schedule-cell"><div class="event-block evt-darkpurple">📚 Inglês / Estudo</div></div>
+                            <div class="schedule-time">07:00</div><div class="schedule-cell"><div class="event-block evt-darkgreen">🏋️ Treino</div></div><div class="schedule-cell"><div class="event-block evt-darkgreen">🏋️ Treino</div></div><div class="schedule-cell"><div class="event-block evt-darkgreen">🏋️ Treino</div></div><div class="schedule-cell"><div class="event-block evt-darkgreen">🏋️ Treino</div></div><div class="schedule-cell"><div class="event-block evt-darkgreen">🏋️ Treino</div></div>
+                            <div class="schedule-time">08:00</div><div class="schedule-cell"><div class="event-block evt-lightgreen opacity-50">☕ Café / Org</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen opacity-50">☕ Café / Org</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen opacity-50">☕ Café / Org</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen opacity-50">☕ Café / Org</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen opacity-50">☕ Café / Org</div></div>
+                            <div class="schedule-time">09:00</div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">🚀 Gestão Tráfego (V4)</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">🚀 Gestão Tráfego (V4)</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">🚀 Gestão Tráfego (V4)</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">🚀 Gestão Tráfego (V4)</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">🚀 Gestão Tráfego (V4)</div></div>
+                            <div class="schedule-time">10:00</div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div>
+                            <div class="schedule-time">11:00</div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div>
+                            <div class="schedule-time">12:00</div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div>
+                            <div class="schedule-time">13:00</div><div class="schedule-cell"><div class="event-block evt-lightgreen">🍽️ Almoço</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen">🍽️ Almoço</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen">🍽️ Almoço</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen">🍽️ Almoço</div></div><div class="schedule-cell"><div class="event-block evt-lightgreen">🍽️ Almoço</div></div>
+                            <div class="schedule-time">14:00</div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">📊 Otimizações / Calls</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">📊 Otimizações / Calls</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">📊 Otimizações / Calls</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">📊 Otimizações / Calls</div></div><div class="schedule-cell row-span-4" style="grid-row: span 4;"><div class="event-block evt-black h-full">🍺 Encerramento</div></div>
+                            <div class="schedule-time">15:00</div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div>
+                            <div class="schedule-time">16:00</div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div>
+                            <div class="schedule-time">17:00</div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div><div class="hidden"></div>
+                            <div class="schedule-time">18:00</div><div class="schedule-cell"></div><div class="schedule-cell"></div><div class="schedule-cell"></div><div class="schedule-cell"></div><div class="schedule-cell"></div>
+                            <div class="schedule-time">19:00</div><div class="schedule-cell"><div class="event-block evt-darkpurple">🎓 Estudos</div></div><div class="schedule-cell"><div class="event-block evt-orange">💰 Freela / Prospecção</div></div><div class="schedule-cell"><div class="event-block evt-darkpurple">🎓 Estudos</div></div><div class="schedule-cell"><div class="event-block evt-orange">💰 Freela / Prospecção</div></div><div class="schedule-cell"></div>
+                        </div>
+                    </div>
+                    <div class="lg:col-span-1 space-y-6">
+                        <div class="glass-panel p-4 rounded-xl"><h4 class="font-bold text-white text-sm mb-3">Legenda do Sistema</h4><div class="space-y-2 text-xs text-slate-300"><div class="flex items-center"><span class="legend-dot evt-black"></span> Gestão Tráfego</div><div class="flex items-center"><span class="legend-dot evt-red"></span> Urgente 🔥</div><div class="flex items-center"><span class="legend-dot evt-orange"></span> Atenção / Freela</div><div class="flex items-center"><span class="legend-dot evt-rose"></span> Rotina Fixa</div><div class="flex items-center"><span class="legend-dot evt-darkgreen"></span> Esportes</div><div class="flex items-center"><span class="legend-dot evt-darkpurple"></span> Intelectual</div><div class="flex items-center"><span class="legend-dot evt-lightpurple"></span> Reuniões</div><div class="flex items-center"><span class="legend-dot evt-lightgreen"></span> Comer</div></div></div>
+                        <div class="glass-panel p-4 rounded-xl border-t-4 border-blue-500"><h4 class="font-bold text-white text-sm mb-3">Protocolo Diário</h4><div class="space-y-2"><label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" class="save-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-0" id="habit-water"><span class="text-xs text-slate-300 group-hover:text-white transition">💧 3L Água</span></label><label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" class="save-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-0" id="habit-read"><span class="text-xs text-slate-300 group-hover:text-white transition">📖 10 Pag Leitura</span></label><label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" class="save-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-0" id="habit-train"><span class="text-xs text-slate-300 group-hover:text-white transition">🏋️ Treino Feito</span></label><label class="flex items-center gap-2 cursor-pointer group"><input type="checkbox" class="save-checkbox w-4 h-4 rounded border-slate-600 bg-slate-800 text-blue-500 focus:ring-0" id="habit-sugar"><span class="text-xs text-slate-300 group-hover:text-white transition">🚫 Zero Açúcar</span></label></div></div>
+                        <div class="glass-panel p-4 rounded-xl"><h4 class="font-bold text-white text-sm mb-2 flex items-center gap-2"><i class="fa-solid fa-brain text-pink-400"></i> Brain Dump</h4><textarea id="brain-dump" class="w-full bg-slate-900/50 border border-slate-700 rounded-lg p-2 text-xs text-slate-300 h-32 outline-none focus:border-pink-500 resize-none" placeholder="Ideias rápidas, tarefas soltas..."></textarea></div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <!-- AI HUB & MODALS -->
+    <div class="fixed bottom-8 right-8 z-50 flex flex-col items-end">
+        <div id="ai-chat-window" class="hidden w-80 md:w-96 bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl mb-4 overflow-hidden flex flex-col h-[500px] transition-all theme-tutor">
+            <div class="bg-slate-800 p-3 border-b border-slate-700">
+                <div class="flex bg-slate-900 rounded-lg p-1 mb-2">
+                    <button onclick="setAIMode('tutor')" id="btn-mode-tutor" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-slate-700 text-white shadow transition-all">🇺🇸 English Tutor</button>
+                    <button onclick="setAIMode('coach')" id="btn-mode-coach" class="flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition-all">🧠 Strategic Coach</button>
+                </div>
+                <div class="flex justify-between items-center px-1">
+                    <div class="flex items-center gap-2"><div id="ai-avatar" class="w-6 h-6 rounded-full bg-purple-600 flex items-center justify-center text-[10px] text-white"><i class="fa-solid fa-graduation-cap"></i></div><span id="ai-name" class="text-sm font-bold text-white">English Teacher</span></div>
+                    <button onclick="toggleChat()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-times"></i></button>
+                </div>
+            </div>
+            <div id="chat-messages" class="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-950"><div class="chat-bubble-ai p-3 text-sm">Hello Luan! Ready to practice English? 🇺🇸</div></div>
+            <div class="p-3 bg-slate-800 border-t border-slate-700">
+                <div class="relative flex gap-2"><input type="text" id="chat-input" placeholder="Type message..." class="w-full bg-slate-900 text-slate-200 text-sm rounded-lg pl-3 pr-10 py-2 border border-slate-700 focus:outline-none focus:border-blue-500" onkeypress="handleChatEnter(event)"><button onclick="handleChatMessage()" class="text-blue-500 hover:text-blue-400 p-2"><i class="fa-solid fa-paper-plane"></i></button></div>
+            </div>
+        </div>
+        <button onclick="toggleChat()" class="w-16 h-16 rounded-full bg-gradient-to-r from-blue-600 to-indigo-600 shadow-[0_0_20px_rgba(37,99,235,0.5)] flex items-center justify-center text-white text-2xl hover:scale-110 transition-transform border border-white/20"><i class="fa-solid fa-robot"></i></button>
+    </div>
+
+    <!-- MODAL: ADD CLIENT (UPDATED) -->
+    <div id="client-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[60] hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-md p-6 shadow-2xl relative animate-in zoom-in-95 duration-200">
+            <h3 class="text-xl font-bold text-white mb-6">Novo Contrato</h3>
+            <form id="client-form" class="space-y-4">
+                <div><label class="block text-xs text-slate-400 mb-1 ml-1">Cliente / Empresa</label><input type="text" id="c-name" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition" placeholder="Ex: Pizzaria do João" required></div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><label class="block text-xs text-slate-400 mb-1 ml-1">Valor Mensal (R$)</label><input type="number" id="c-value" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition" placeholder="1500" required></div>
+                    <div><label class="block text-xs text-slate-400 mb-1 ml-1">Data Início</label><input type="date" id="c-start" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition" required></div>
+                </div>
+                <div><label class="block text-xs text-slate-400 mb-1 ml-1">Dia Pagamento</label><input type="number" id="c-day" class="w-full bg-slate-800 border border-slate-700 rounded-lg p-3 text-white focus:border-yellow-500 outline-none transition" placeholder="05"></div>
+                <div class="flex gap-3 pt-4"><button type="button" onclick="document.getElementById('client-modal').classList.add('hidden')" class="flex-1 py-3 rounded-lg text-slate-400 hover:bg-white/5 transition">Cancelar</button><button type="submit" class="flex-1 bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-bold py-3 rounded-lg shadow-lg shadow-yellow-500/20 transition">Salvar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = "AIzaSyD9aqaHvwwg52ycVzwlnjeQAhHwC0nUkfc"; // Cole sua API Key aqui
+
+        // --- PERSISTENCE LAYER ---
+        let appData = {
+            v4Salary: 3700,
+            clients: [],
+            currentWeight: 90.0,
+            investmentCurrent: 8500.0,
+            brainDump: "",
+            calendarLink: "",
+            checkboxes: {} // Stores ID: boolean
+        };
+
+        function saveData() {
+            localStorage.setItem('luanos_data_v4', JSON.stringify(appData));
+        }
+
+        function loadData() {
+            const saved = localStorage.getItem('luanos_data_v4');
+            if (saved) {
+                appData = JSON.parse(saved);
+                // Restore State
+                let totalIncome = appData.v4Salary + appData.clients.reduce((acc, c) => acc + parseFloat(c.value), 0);
+                updateDashboardMainStats(totalIncome);
+                updateInvestmentDisplay();
+                adjustWeight(0); // Trigger update UI
+                document.getElementById('brain-dump').value = appData.brainDump || "";
+                renderClientCards();
+                
+                // Restore Calendar
+                if(appData.calendarLink) {
+                    const container = document.getElementById('calendar-container');
+                    const iframe = document.getElementById('calendar-frame');
+                    if (container && iframe) {
+                        iframe.src = appData.calendarLink;
+                        container.classList.remove('hidden');
+                        document.getElementById('calendar-link-input').classList.add('hidden');
+                        document.querySelector('button[onclick="saveCalendarLink()"]').classList.add('hidden');
+                    }
+                }
+
+                // Restore Checkboxes
+                Object.keys(appData.checkboxes).forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.checked = appData.checkboxes[id];
+                });
+                
+                // Restore English Level
+                let lvl = "A1";
+                if(appData.checkboxes['lvl-a2']) lvl = "A2";
+                if(appData.checkboxes['lvl-b1']) lvl = "B1";
+                if(appData.checkboxes['lvl-b2']) lvl = "B2";
+                updateEnglishLevel(lvl);
+            }
+        }
+
+        // --- NAVIGATION ---
+        function switchTab(tabId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById('view-' + tabId).classList.remove('hidden');
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-white/10', 'text-white', 'shadow-lg');
+                btn.classList.add('text-slate-400');
+            });
+            const btn = document.getElementById('nav-' + tabId);
+            if(btn) {
+                if(tabId === 'dashboard') btn.classList.add('bg-red-600', 'text-white', 'shadow-lg');
+                else btn.classList.add('bg-white/10', 'text-white');
+                btn.classList.remove('text-slate-400');
+            }
+        }
+
+        // --- CALENDAR LOGIC ---
+        function saveCalendarLink() {
+            const link = document.getElementById('calendar-link-input').value;
+            appData.calendarLink = link;
+            saveData();
+            if(link) {
+                const container = document.getElementById('calendar-container');
+                const iframe = document.getElementById('calendar-frame');
+                if (container && iframe) {
+                    iframe.src = link;
+                    container.classList.remove('hidden');
+                    document.getElementById('calendar-link-input').classList.add('hidden');
+                    document.querySelector('button[onclick="saveCalendarLink()"]').classList.add('hidden');
+                }
+            }
+        }
+
+        // --- INVESTMENTS LOGIC ---
+        function addInvestment() {
+            const amountStr = prompt("Valor do novo aporte (R$):", "0");
+            if(amountStr) {
+                const amount = parseFloat(amountStr.replace(',', '.'));
+                if(!isNaN(amount)) {
+                    appData.investmentCurrent += amount;
+                    saveData();
+                    updateInvestmentDisplay();
+                }
+            }
+        }
+
+        function updateInvestmentDisplay() {
+            document.getElementById('inv-current').innerText = `R$ ${appData.investmentCurrent.toLocaleString('pt-BR')}`;
+            const pct = Math.min((appData.investmentCurrent / 22000) * 100, 100);
+            const pctText = Math.round(pct) + '%';
+            document.getElementById('inv-pct').innerText = pctText;
+            document.getElementById('inv-bar').style.width = pctText;
+        }
+
+        // --- UPDATE DASHBOARD MAIN STATS ---
+        function updateDashboardMainStats(totalIncome) {
+            document.getElementById('main-total-income').innerText = `R$ ${totalIncome.toLocaleString('pt-BR')}`;
+            const goal = 9000;
+            const pct = Math.min((totalIncome / goal) * 100, 100);
+            const pctText = Math.round(pct) + '%';
+            document.getElementById('main-progress-pct').innerText = pctText;
+            document.getElementById('main-progress-bar').style.width = pctText;
+            document.getElementById('global-progress-text').innerText = pctText;
+            document.getElementById('global-progress-bar').style.width = pctText;
+            document.getElementById('dash-v4-current-mini').innerText = `R$ ${totalIncome.toLocaleString('pt-BR')}`;
+        }
+
+        // --- CRM LOGIC (UPDATED WITH LTV) ---
+        function updateFinancials() {
+            let freelaMRR = 0;
+            let freelaLTV = 0;
+            const now = new Date();
+
+            appData.clients.forEach(client => {
+                const val = parseFloat(client.value);
+                freelaMRR += val;
+                
+                // Calculate LTV
+                if (client.startDate) {
+                    const start = new Date(client.startDate);
+                    // Diff in months
+                    let months = (now.getFullYear() - start.getFullYear()) * 12;
+                    months -= start.getMonth();
+                    months += now.getMonth();
+                    months = months <= 0 ? 1 : months + 1; // At least current month
+                    freelaLTV += val * months;
+                } else {
+                    freelaLTV += val; // Fallback
+                }
+            });
+
+            if(document.getElementById('crm-mrr')) document.getElementById('crm-mrr').innerText = `R$ ${freelaMRR.toLocaleString('pt-BR')}`;
+            if(document.getElementById('crm-ltv')) document.getElementById('crm-ltv').innerText = `R$ ${freelaLTV.toLocaleString('pt-BR')}`;
+            if(document.getElementById('crm-count')) document.getElementById('crm-count').innerText = appData.clients.length;
+            
+            let totalIncome = appData.v4Salary + freelaMRR;
+            document.getElementById('header-total-income').innerText = `R$ ${totalIncome.toLocaleString('pt-BR')}`;
+            updateDashboardMainStats(totalIncome);
+            renderClientCards();
+        }
+
+        function renderClientCards() {
+            const container = document.getElementById('clients-container');
+            if(!container) return;
+            container.innerHTML = '';
+            if (appData.clients.length === 0) {
+                container.innerHTML = `<div class="col-span-full py-12 text-center border-2 border-dashed border-slate-800 rounded-3xl opacity-50"><i class="fa-solid fa-folder-open text-4xl mb-4 text-slate-600"></i><p class="text-slate-400">Nenhum contrato ativo.</p></div>`;
+                return;
+            }
+            appData.clients.forEach((client, index) => {
+                const card = document.createElement('div');
+                card.className = 'glass-panel p-6 rounded-3xl relative group';
+                card.innerHTML = `<div class="flex justify-between items-start mb-4"><div class="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white text-xl font-bold shadow-lg shadow-orange-500/20">${client.name.charAt(0)}</div><button onclick="removeClient(${index})" class="text-slate-600 hover:text-red-500 transition"><i class="fa-solid fa-trash"></i></button></div><h4 class="text-xl font-bold text-white mb-1">${client.name}</h4><p class="text-2xl font-bold text-green-400 mb-4">R$ ${parseFloat(client.value).toLocaleString('pt-BR')}<span class="text-xs text-slate-500 font-normal ml-1">/mês</span></p><div class="flex items-center gap-2 text-sm text-slate-400 bg-slate-800/50 p-2 rounded-lg"><i class="fa-regular fa-calendar text-yellow-500"></i><span>Dia ${client.day}</span> <span class="text-[10px] ml-2 opacity-50">Desde: ${client.startDate}</span></div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function removeClient(index) { if(confirm("Encerrar contrato?")) { appData.clients.splice(index, 1); saveData(); updateFinancials(); } }
+        function openClientModal() { document.getElementById('client-modal').classList.remove('hidden'); }
+        document.getElementById('client-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const newClient = { 
+                name: document.getElementById('c-name').value, 
+                value: document.getElementById('c-value').value, 
+                day: document.getElementById('c-day').value,
+                startDate: document.getElementById('c-start').value 
+            };
+            appData.clients.push(newClient);
+            saveData();
+            document.getElementById('client-modal').classList.add('hidden');
+            e.target.reset();
+            updateFinancials();
+        });
+
+        // --- ENGLISH & CHECKBOXES ---
+        function updateEnglishLevel(lvl) {
+            document.getElementById('dash-english-lvl').innerText = lvl;
+            if(document.getElementById('page-english-lvl')) document.getElementById('page-english-lvl').innerText = lvl;
+        }
+
+        // --- HEALTH TRACKER ---
+        function adjustWeight(amount) {
+            appData.currentWeight += amount;
+            appData.currentWeight = Math.round(appData.currentWeight * 10) / 10;
+            saveData();
+            document.getElementById('current-weight').innerText = appData.currentWeight.toFixed(1);
+            const totalLoss = 90.0 - appData.currentWeight;
+            const percentage = (totalLoss / 20.0) * 100;
+            document.getElementById('weight-bar').style.width = `${Math.max(0, Math.min(percentage, 100))}%`;
+            document.getElementById('weight-lost').innerText = `${totalLoss.toFixed(1)}kg eliminados`;
+        }
+
+        // --- GLOBAL LISTENERS (AUTO SAVE) ---
+        document.addEventListener('change', (e) => {
+            if (e.target.classList.contains('save-checkbox') || e.target.classList.contains('level-check')) {
+                appData.checkboxes[e.target.id] = e.target.checked;
+                saveData();
+            }
+        });
+
+        document.getElementById('brain-dump').addEventListener('input', (e) => {
+            appData.brainDump = e.target.value;
+            saveData();
+        });
+
+        // --- AI HUB ---
+        let aiMode = 'tutor';
+        function toggleChat() { document.getElementById('ai-chat-window').classList.toggle('hidden'); }
+        function setAIMode(mode) {
+            aiMode = mode;
+            const chatWindow = document.getElementById('ai-chat-window');
+            const msgs = document.getElementById('chat-messages');
+            msgs.innerHTML = '';
+            if (mode === 'tutor') {
+                chatWindow.classList.remove('theme-coach'); chatWindow.classList.add('theme-tutor');
+                document.getElementById('btn-mode-tutor').className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-slate-700 text-white shadow transition-all";
+                document.getElementById('btn-mode-coach').className = "flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition-all";
+                document.getElementById('ai-name').innerText = "English Teacher";
+                msgs.innerHTML = '<div class="chat-bubble-ai p-3 text-sm">Hello Luan! Ready to practice English? 🇺🇸</div>';
+            } else {
+                chatWindow.classList.remove('theme-tutor'); chatWindow.classList.add('theme-coach');
+                document.getElementById('btn-mode-coach').className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-emerald-700 text-white shadow transition-all";
+                document.getElementById('btn-mode-tutor').className = "flex-1 py-1.5 text-xs font-bold rounded-md text-slate-400 hover:text-white transition-all";
+                document.getElementById('ai-name').innerText = "Strategic Coach";
+                msgs.innerHTML = '<div class="chat-bubble-ai p-3 text-sm">Olá, Luan. Sou seu estrategista. Vamos analisar suas metas? 🧠</div>';
+            }
+        }
+
+        async function callGemini(text, mode) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`;
+            let systemPrompt = "";
+            if (mode === 'tutor') { systemPrompt = `Act as an English Tutor for Luan (A1 level). Correct grammar gently. Keep conversation going. Reply concisely.`; }
+            else { systemPrompt = `You are a high-performance Strategic Coach for Luan. Context: V4 Salary: R$ ${appData.v4Salary} (Goal 6k). Investments: R$ ${appData.investmentCurrent} (Goal 22k). English: ${document.getElementById('dash-english-lvl').innerText}. User Query: "${text}". Task: Provide specific, actionable advice on career, productivity, or business strategy. Be direct, professional, and encouraging. Use Portuguese.`; }
+            const payload = { contents: [{ parts: [{ text: text }] }], systemInstruction: { parts: [{ text: systemPrompt }] } };
+            try {
+                const response = await fetch(url, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (e) { return "Erro de conexão com o cérebro digital. Tente novamente."; }
+        }
+
+        async function handleChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+            const msgs = document.getElementById('chat-messages');
+            msgs.innerHTML += `<div class="flex justify-end"><div class="chat-bubble-user p-3 text-sm">${text}</div></div>`;
+            input.value = '';
+            msgs.scrollTop = msgs.scrollHeight;
+            const loadingId = 'loading-' + Date.now();
+            msgs.innerHTML += `<div id="${loadingId}" class="flex"><div class="chat-bubble-ai p-3 text-sm"><i class="fa-solid fa-circle-notch fa-spin"></i></div></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+            const response = await callGemini(text, aiMode);
+            document.getElementById(loadingId).remove();
+            msgs.innerHTML += `<div class="flex"><div class="chat-bubble-ai p-3 text-sm prose prose-invert max-w-none">${marked.parse(response)}</div></div>`;
+            msgs.scrollTop = msgs.scrollHeight;
+        }
+        function handleChatEnter(e) { if(e.key === 'Enter') handleChatMessage(); }
+
+        // --- AUDIO CHAT ---
+        async function callGeminiTutor(userText) { return callGemini(userText, 'tutor'); }
+        async function sendToTeacher() {
+            const input = document.getElementById('teacher-input');
+            const text = input.value.trim();
+            if(!text) return;
+            const container = document.getElementById('teacher-messages');
+            container.innerHTML += `<div class="flex gap-3 justify-end"><div class="teacher-bubble-user p-3 text-sm">${text}</div></div>`;
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+            const response = await callGeminiTutor(text);
+            container.innerHTML += `<div class="flex gap-3"><img src="https://ui-avatars.com/api/?name=Teacher+AI&background=7c3aed&color=fff" class="w-8 h-8 rounded-full self-end mb-1"><div class="teacher-bubble-ai p-3 text-sm">${marked.parse(response)}</div></div>`;
+            container.scrollTop = container.scrollHeight;
+        }
+        function handleTeacherEnter(e) { if(e.key === 'Enter') sendToTeacher(); }
+        function toggleMic() { alert("Microfone ativado (Simulação)"); }
+
+        // --- INIT ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            const ctxD = document.getElementById('incomeDistChart').getContext('2d');
+            new Chart(ctxD, { type: 'doughnut', data: { labels: ['V4', 'Freela'], datasets: [{ data: [3700, 0], backgroundColor: ['#ef4444', '#eab308'], borderWidth: 0 }] }, options: { plugins: { legend: { display: false } }, cutout: '75%' } });
+            const ctxF = document.getElementById('financeChart').getContext('2d');
+            new Chart(ctxF, { type: 'line', data: { labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'], datasets: [{ label: 'Meta', data: [3700, 4200, 4200, 4200, 6200, 6200, 6700, 6700, 8350, 8350, 8350, 9000], borderColor: '#64748b', borderDash: [5,5] }, { label: 'Realidade', data: [3700, 3700], borderColor: '#3b82f6', backgroundColor: 'rgba(59, 130, 246, 0.1)', fill: true }] }, options: { plugins: { legend: { display: false } }, scales: { y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#64748b' } }, x: { grid: { display: false } } } } });
+            setAIMode('tutor');
+        });
+    </script>
+</body>
+</html>
